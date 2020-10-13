@@ -7,13 +7,13 @@ from loguru import logger
 from ..data_import.mzmine import load_picked_boxes
 
 class Peak(object): # todo: add MS2 information
-    def __init__(self,mz,rt,intensity,source_file,source_id):
+    def __init__(self,mz,rt,intensity,source_file,source_id, ms2_spectrum):
         self.mz = mz
         self.rt = rt
         self.intensity = intensity
         self.source_file = source_file
         self.source_id = source_id
-        self.ms2_spectrum = None
+        self.ms2_spectrum = ms2_spectrum
         
     def add_ms2_spectrum(self,ms2_spectrum):
         self.ms2_spectrum = ms2_spectrum
@@ -93,6 +93,12 @@ class JoinAligner(object):
         self.rt_column_pos = rt_column_pos
         self.intensity_column_pos = intensity_column_pos
     def add_file(self,input_csv,input_mgf=None):
+        
+        if input_mgf==None:
+            ms2_spectra = None
+        else:
+            ms2_spectra = input_mgf
+        
         with open(input_csv,'r') as f:
             reader =  csv.reader(f)
             heads = next(reader)
@@ -107,8 +113,16 @@ class JoinAligner(object):
                 peak_mz = float(line[self.mz_column_pos])
                 peak_rt = float(line[self.rt_column_pos])
                 peak_intensity = float(line[self.intensity_column_pos]) 
+                
+                if ms2_spectra != None:
+                    if source_id in ms2_spectra:
+                        ms2spec = ms2_spectra[source_id]
+                    else:
+                        ms2spec = None
+                else:
+                    ms2spec = None
 
-                these_peaks.append(Peak(peak_mz,peak_rt,peak_intensity,short_name,source_id))
+                these_peaks.append(Peak(peak_mz,peak_rt,peak_intensity,short_name,source_id, ms2_spec))
         self._align(these_peaks,short_name)
     
     def _align(self,these_peaks,short_name):
